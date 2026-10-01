@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Login – CSTAN Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+  <div class="col-md-6 col-lg-4">
+    <div class="card cstan-card p-4">
+      <div class="text-center mb-4">
+        <div class="d-inline-flex p-3 rounded-circle bg-primary-subtle text-primary mb-2">
+          <i class="bi bi-shield-lock fs-1"></i>
+        </div>
+        <h3 class="fw-bold text-light">Welcome to CSTAN</h3>
+        <p class="text-muted small">Citizen Safety & Travel Assistance Network</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('login') }}">
+        <div class="mb-3">
+          <label for="email" class="form-label text-light small fw-semibold">Email Address</label>
+          <div class="input-group">
+            <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-envelope"></i></span>
+            <input type="email" class="form-control bg-dark text-light border-secondary" id="email" name="email" required placeholder="name@example.com">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label text-light small fw-semibold">Password</label>
+          <div class="input-group">
+            <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-key"></i></span>
+            <input type="password" class="form-control bg-dark text-light border-secondary" id="password" name="password" required placeholder="••••••••">
+          </div>
+        </div>
+
+        <div class="mb-4 form-check">
+          <input type="checkbox" class="form-check-input bg-dark border-secondary" id="remember" name="remember" checked>
+          <label class="form-check-label text-muted small" for="remember">Keep me logged in</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mb-3">
+          <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Safety Network
+        </button>
+      </form>
+
+      <!-- Quick Demo Login Presets -->
+      <div class="border-top border-secondary pt-3 mt-2">
+        <div class="text-muted small text-center mb-2">Quick Demo Accounts (1-Click Fill):</div>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-sm btn-outline-info" onclick="fillCredentials('tourist@cstan.org', 'password123')">
+            <i class="bi bi-person me-1"></i> Tourist Demo (Sarah Jenkins)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-warning" onclick="fillCredentials('admin@cstan.org', 'admin123')">
+            <i class="bi bi-shield-fill me-1"></i> Authority Admin (HQ Commander)
+          </button>
+        </div>
+      </div>
+
+      <div class="text-center mt-4">
+        <span class="text-muted small">New traveler or citizen?</span>
+        <a href="{{ url_for('register') }}" class="small text-info ms-1">Create Digital Safety ID</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function fillCredentials(email, pwd) {
+    document.getElementById('email').value = email;
+    document.getElementById('password').value = pwd;
+  }
+</script>
+{% endblock %}

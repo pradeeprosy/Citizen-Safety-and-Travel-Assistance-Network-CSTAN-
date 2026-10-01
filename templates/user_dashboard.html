@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}CSTAN – Citizen Safety Dashboard{% endblock %}
+
+{% block content %}
+<!-- Live Geofence Alert Banner -->
+<div id="geofenceAlertBanner" class="cstan-alert-box cstan-alert-success" style="display: none;">
+  <i class="bi bi-shield-check fs-5"></i>
+  <span data-i18n="safe_info">✅ You are in a monitored safe corridor.</span>
+</div>
+
+<!-- Anomaly Alert Banner -->
+<div id="anomalyAlertBanner" class="cstan-alert-box cstan-alert-warning" style="display: none;">
+  <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+  <div>
+    <strong>Safety Alert: Unusual Movement Detected</strong>
+    <div class="small">System flagged irregular trajectory. Support team on standby.</div>
+  </div>
+</div>
+
+{% if active_sos %}
+<!-- Persistent Active SOS Banner if user has open SOS -->
+<div class="cstan-alert-box cstan-alert-danger mb-3">
+  <div class="spinner-grow spinner-grow-sm text-danger me-2" role="status"></div>
+  <div class="flex-grow-1">
+    <strong>🚨 ACTIVE EMERGENCY SOS IN PROGRESS (Status: <span class="badge bg-danger">{{ active_sos.status }}</span>)</strong>
+    <div class="small">Category: {{ active_sos.type }} • Reported at: {{ active_sos.created_at.strftime('%H:%M:%S') }} UTC</div>
+    {% if active_sos.admin_notes %}
+      <div class="mt-1 small bg-dark p-2 rounded text-light"><strong>Support Note:</strong> {{ active_sos.admin_notes }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <!-- Left Column: Safety Score, Quick SOS & Profile -->
+  <div class="col-lg-4 col-md-5">
+    
+    <!-- 1. Safety Score Card -->
+    <div class="card cstan-card p-3 mb-3">
+      <div class="cstan-card-header p-0 pb-2 mb-3">
+        <h5 class="fw-bold mb-0 text-light"><i class="bi bi-shield-shaded me-2 text-info"></i><span data-i18n="safety_score">Safety Score</span></h5>
+        <span class="badge bg-secondary-subtle text-secondary small">Real-Time AI</span>
+      </div>
+
+      <div class="text-center">
+        <div id="safetyGauge" class="safety-gauge-circle {% if safety.score >= 80 %}gauge-success{% elif safety.score >= 55 %}gauge-warning{% else %}gauge-danger{% endif %}">
+          <div id="safetyScoreVal" class="safety-score-number">{{ safety.score }}</div>
+          <div class="safety-score-total">/ 100</div>
+        </div>
+        <div id="safetyRatingText" class="fw-bold text-{{ safety.badge }} fs-6">
+          {{ safety.rating }}
+        </div>
+        <small class="text-muted" data-i18n="safety_score_desc">Dynamic real-time safety rating</small>
+      </div>
+
+      <hr class="border-secondary my-3">
+
+      <div>
+        <div class="text-muted small fw-semibold mb-2">Score Analysis & Risk Factors:</div>
+        <ul id="safetyDeductions" class="small mb-0 ps-3 text-secondary">
+          {% if safety.deductions %}
+            {% for d in safety.deductions %}
+              <li>{{ d }}</li>
+            {% endfor %}
+          {% else %}
+            <li class="text-success">All telemetry parameters within optimal safe limits.</li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- 2. Emergency SOS Button Card -->
+    <div class="card cstan-card p-3 mb-3 text-center">
+      <div class="cstan-card-header p-0 pb-2 mb-2">
+        <h5 class="fw-bold mb-0 text-danger"><i class="bi bi-broadcast me-2"></i><span data-i18n="emergency_sos">EMERGENCY SOS</span></h5>
+        <span class="badge bg-danger">Critical</span>
+      </div>
+      
+      <p class="text-muted small mb-3" data-i18n="sos_subtitle">
+        Instant GPS distress dispatch to Police & Support Hub
+      </p>
+
+      <div class="sos-button-container p-2">
+        <button type="button" class="btn btn-sos w-100" data-bs-toggle="modal" data-bs-target="#sosModal">
+          <i class="bi bi-exclamation-octagon-fill me-2"></i> SOS
+        </button>
+      </div>
+      <div class="text-muted small mt-2">
+        Auto-broadcasts location to: <strong>{{ current_user.emergency_contact_name or 'Emergency Contacts' }}</strong>
+      </div>
+    </div>
+
+    <!-- 3. Travel Status & Digital ID Card -->
+    <div class="card cstan-card p-3 mb-3">
+      <div class="cstan-card-header p-0 pb-2 mb-3">
+        <h6 class="fw-bold mb-0 text-light"><i class="bi bi-person-badge me-2 text-primary"></i><span data-i18n="digital_id">Digital Tourist ID</span></h6>
+        <span class="badge bg-success">Active Travel</span>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small">Identity Code:</span>
+        <span class="font-monospace text-info fw-bold">{{ current_user.digital_id }}</span>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small">Citizen/Tourist:</span>
+        <span class="text-light fw-semibold">{{ current_user.username }}</span>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small">Destination:</span>
+        <span class="text-light">{{ profile.destination if profile else 'Chennai Corridor' }}</span>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small">Emergency Contact:</span>
+        <span class="text-warning small">{{ current_user.emergency_contact_phone or 'Not configured' }}</span>
+      </div>
+
+      <button class="btn btn-sm btn-outline-info w-100 mt-2" data-bs-toggle="modal" data-bs-target="#digitalIdModal">
+        <i class="bi bi-qr-code-scan me-1"></i> View Encrypted Safety Pass
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Right Column: Interactive Map & Telemetry Controls -->
+  <div class="col-lg-8 col-md-7">
+    
+    <!-- Map Control Header -->
+    <div class="card cstan-card p-3 mb-3">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="fw-bold mb-0 text-light"><i class="bi bi-map me-2 text-info"></i><span data-i18n="current_location">Current Location</span> & Safety Perimeters</h5>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button id="btnSimulateRoute" class="btn btn-sm btn-outline-warning d-flex align-items-center gap-1">
+            <span>🚶</span> <span data-i18n="simulate_movement">Simulate Walk Route</span>
+          </button>
+          <button id="btnRealGps" class="btn btn-sm btn-outline-info d-flex align-items-center gap-1">
+            <i class="bi bi-crosshair"></i> <span data-i18n="real_gps">Use My GPS</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Map Display Container -->
+      <div id="userMap" data-lat="{{ current_user.last_latitude or 13.0827 }}" data-lon="{{ current_user.last_longitude or 80.2707 }}"></div>
+
+      <div class="d-flex flex-wrap align-items-center justify-content-between mt-2 pt-2 border-top border-secondary text-muted small">
+        <div class="d-flex align-items-center gap-3">
+          <span><span style="display:inline-block;width:10px;height:10px;background:#10b981;border-radius:50%;margin-right:4px;"></span>Safe Haven</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#f59e0b;border-radius:50%;margin-right:4px;"></span>Caution Zone</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:50%;margin-right:4px;"></span>Restricted Zone</span>
+        </div>
+        <span class="text-info">Map updates dynamically with geofence proximity</span>
+      </div>
+    </div>
+
+    <!-- Nearby Emergency Services Filter & Feed -->
+    <div class="card cstan-card p-3 mb-3">
+      <div class="cstan-card-header p-0 pb-2 mb-3">
+        <h5 class="fw-bold mb-0 text-light"><i class="bi bi-hospital me-2 text-danger"></i><span data-i18n="nearby_services">Nearby Emergency Services</span></h5>
+        <div class="d-flex gap-1 flex-wrap">
+          <button class="service-filter-btn active" data-cat="all" data-i18n="all">All Services</button>
+          <button class="service-filter-btn" data-cat="police" data-i18n="police">Police</button>
+          <button class="service-filter-btn" data-cat="hospital" data-i18n="hospital">Hospitals</button>
+          <button class="service-filter-btn" data-cat="fire" data-i18n="fire">Fire & Rescue</button>
+          <button class="service-filter-btn" data-cat="tourist_desk" data-i18n="tourist_desk">Tourist Desks</button>
+        </div>
+      </div>
+
+      <div id="nearbyServicesList" style="max-height: 220px; overflow-y: auto;">
+        <div class="text-center text-muted py-3">Loading nearby emergency infrastructure...</div>
+      </div>
+    </div>
+
+    <!-- Active Safety Alerts Accordion -->
+    <div class="card cstan-card p-3">
+      <div class="cstan-card-header p-0 pb-2 mb-2">
+        <h6 class="fw-bold mb-0 text-light"><i class="bi bi-bell-fill me-2 text-warning"></i><span data-i18n="active_alerts">Active Safety Advisories</span></h6>
+        <span class="badge bg-warning text-dark">{{ alerts|length }} Advisories</span>
+      </div>
+
+      <div class="accordion accordion-flush" id="alertsAccordion">
+        {% for alert in alerts %}
+          <div class="accordion-item bg-dark border-secondary">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed bg-dark text-light border-0 shadow-none py-2" type="button" data-bs-toggle="collapse" data-bs-target="#alert-{{ alert.id }}">
+                <span class="badge bg-{{ 'danger' if alert.risk_level=='high' else ('warning text-dark' if alert.risk_level=='medium' else 'info text-dark') }} me-2 text-uppercase">{{ alert.risk_level }}</span>
+                {{ alert.title }}
+              </button>
+            </h2>
+            <div id="alert-{{ alert.id }}" class="accordion-collapse collapse" data-bs-parent="#alertsAccordion">
+              <div class="accordion-body bg-dark text-muted small border-top border-secondary">
+                {{ alert.description }}
+                <div class="mt-1 text-secondary" style="font-size: 0.75rem;">Issued: {{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= SOS MODAL ================= -->
+<div class="modal fade" id="sosModal" tabindex="-1" aria-labelledby="sosModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-light border border-danger shadow-lg">
+      <div class="modal-header border-bottom border-danger bg-danger-subtle text-danger">
+        <h5 class="modal-title fw-bold" id="sosModalLabel" data-i18n="sos_confirm_title">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i> Confirm Emergency SOS Dispatch
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted small">
+          This will transmit your live GPS coordinates, digital identity, and medical notes to the CSTAN Central Command and your emergency contacts.
+        </p>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold" data-i18n="sos_category_label">Select Emergency Type</label>
+          <select id="sosTypeSelect" class="form-select bg-black text-light border-secondary">
+            <option value="Medical Emergency" data-i18n="medical_emergency">Medical Emergency</option>
+            <option value="Accident" data-i18n="accident">Accident / Collision</option>
+            <option value="Lost Person" data-i18n="lost_person">Lost / Stranded Person</option>
+            <option value="Harassment" data-i18n="harassment">Harassment / Safety Threat</option>
+            <option value="Security Threat" data-i18n="security_threat">Security Threat</option>
+            <option value="Other" data-i18n="other_emergency">Other Critical Emergency</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold" data-i18n="sos_notes_label">Additional Emergency Details (Optional)</label>
+          <textarea id="sosNotesInput" class="form-control bg-black text-light border-secondary" rows="3" placeholder="Describe symptoms, landmark, or immediate danger..."></textarea>
+        </div>
+
+        <div class="p-2 rounded bg-danger-subtle text-danger small border border-danger">
+          <i class="bi bi-info-circle-fill me-1"></i> Authorized authorities will immediately mobilize assistance.
+        </div>
+      </div>
+      <div class="modal-footer border-top border-secondary">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+        <button type="button" id="btnConfirmSos" class="btn btn-danger fw-bold px-4" data-i18n="sos_send_btn">
+          <i class="bi bi-broadcast me-1"></i> DISPATCH SOS NOW
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DIGITAL ID MODAL ================= -->
+<div class="modal fade" id="digitalIdModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-transparent border-0">
+      <div class="digital-id-card">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <div class="digital-id-badge">Verified Tourist Pass</div>
+            <h4 class="text-light fw-bold mt-2 mb-0">{{ current_user.username }}</h4>
+            <div class="font-monospace text-info">{{ current_user.digital_id }}</div>
+          </div>
+          <div class="text-end">
+            <i class="bi bi-shield-check text-info fs-1"></i>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-3 small">
+          <div class="col-6">
+            <span class="text-muted">Blood Group:</span>
+            <div class="fw-bold text-light">{{ current_user.blood_group }}</div>
+          </div>
+          <div class="col-6">
+            <span class="text-muted">Contact:</span>
+            <div class="fw-bold text-light">{{ current_user.phone }}</div>
+          </div>
+          <div class="col-12">
+            <span class="text-muted">Emergency Contact:</span>
+            <div class="fw-bold text-warning">{{ current_user.emergency_contact_name }} ({{ current_user.emergency_contact_phone }})</div>
+          </div>
+          <div class="col-12">
+            <span class="text-muted">Medical Notes:</span>
+            <div class="text-light">{{ current_user.medical_notes or 'None' }}</div>
+          </div>
+        </div>
+
+        <!-- Simulated Security QR -->
+        <div class="p-3 bg-white rounded text-center text-dark">
+          <div class="fw-bold small mb-1 text-primary">OFFICIAL VERIFICATION CODE</div>
+          <div class="d-flex justify-content-center align-items-center py-2">
+            <i class="bi bi-qr-code" style="font-size: 4rem; color: #0f172a;"></i>
+          </div>
+          <div class="font-monospace small text-muted">HASH: SHA256-{{ current_user.digital_id }}</div>
+        </div>
+
+        <div class="text-center mt-3">
+          <button type="button" class="btn btn-sm btn-outline-light" data-bs-dismiss="modal">Close Pass</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/map_engine.js') }}"></script>
+{% endblock %}

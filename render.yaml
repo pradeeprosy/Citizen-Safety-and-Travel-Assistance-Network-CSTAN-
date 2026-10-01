@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: cstan-platform
+    env: python
+    buildCommand: pip install -r requirements.txt && python seed_data.py
+    startCommand: gunicorn wsgi:app
+    plan: free
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_DEBUG
+        value: "False"
+      - key: PYTHON_VERSION
+        value: 3.11.8

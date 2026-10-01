@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}CSTAN – Authority Central Command & Triage{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-secondary">
+  <div>
+    <h3 class="fw-bold text-light mb-1"><i class="bi bi-shield-shaded me-2 text-danger"></i>Authority Central Command Dashboard</h3>
+    <p class="text-muted small mb-0">Unified Citizen Safety, Geofence Enforcement & SOS Incident Triage Console</p>
+  </div>
+  <div class="d-flex gap-2">
+    <span class="badge bg-danger-subtle text-danger border border-danger p-2 d-flex align-items-center gap-1">
+      <span class="spinner-grow spinner-grow-sm"></span> Live Dispatch Feed Active
+    </span>
+  </div>
+</div>
+
+<!-- 1. Top KPI Statistics Row -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-6">
+    <div class="card cstan-card p-3 border-start border-4 border-info">
+      <div class="text-muted small fw-semibold">REGISTERED CITIZENS</div>
+      <div class="fs-2 fw-bold text-light mt-1">{{ total_users }}</div>
+      <small class="text-info"><i class="bi bi-person-check me-1"></i>Verified Digital IDs</small>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-6">
+    <div class="card cstan-card p-3 border-start border-4 border-success">
+      <div class="text-muted small fw-semibold">ACTIVE TRAVELERS</div>
+      <div class="fs-2 fw-bold text-light mt-1">{{ active_travelers }}</div>
+      <small class="text-success"><i class="bi bi-geo me-1"></i>En route & Monitored</small>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-6">
+    <div class="card cstan-card p-3 border-start border-4 border-warning">
+      <div class="text-muted small fw-semibold">ACTIVE ALERTS</div>
+      <div class="fs-2 fw-bold text-light mt-1">{{ active_alerts_count }}</div>
+      <small class="text-warning"><i class="bi bi-bell me-1"></i>Safety Advisories</small>
+    </div>
+  </div>
+
+  <div class="col-md-3 col-6">
+    <div class="card cstan-card p-3 border-start border-4 border-danger">
+      <div class="text-muted small fw-semibold">PENDING SOS REQUESTS</div>
+      <div class="fs-2 fw-bold text-danger mt-1">{{ active_sos_count }}</div>
+      <small class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Requires Rapid Triage</small>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Command Map & Real-Time Monitoring -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card cstan-card p-3">
+      <div class="cstan-card-header p-0 pb-2 mb-3">
+        <h5 class="fw-bold mb-0 text-light"><i class="bi bi-radar me-2 text-info"></i>Geographic Information System (GIS) Incident Map</h5>
+        <span class="badge bg-dark border border-secondary text-info">Auto-refreshes every 4s</span>
+      </div>
+      <div id="adminMap"></div>
+      <div class="d-flex justify-content-between align-items-center mt-2 text-muted small">
+        <div>
+          <span class="me-3">🔵 Citizen Location</span>
+          <span class="me-3">🚨 SOS Distress Signal</span>
+          <span>⭕ Geofenced Zone</span>
+        </div>
+        <span class="text-secondary">Click any beacon to view live incident details and telemetry</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Emergency SOS Incident Triage Console -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card cstan-card p-3">
+      <div class="cstan-card-header p-0 pb-2 mb-3">
+        <h5 class="fw-bold mb-0 text-danger"><i class="bi bi-broadcast-pin me-2"></i>Emergency SOS Requests & Response Pipeline</h5>
+        <span class="badge bg-danger">{{ emergencies|length }} Total Recorded</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+          <thead>
+            <tr class="text-muted small text-uppercase">
+              <th>SOS ID</th>
+              <th>Citizen / Digital ID</th>
+              <th>Emergency Type</th>
+              <th>Coordinates</th>
+              <th>Emergency Contact</th>
+              <th>Description / Dispatch Log</th>
+              <th>Status</th>
+              <th>Triage Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for em in emergencies %}
+              <tr>
+                <td class="font-monospace text-danger fw-bold">#{{ em.id }}</td>
+                <td>
+                  <div class="fw-bold text-light">{{ em.user.username if em.user else 'Unknown' }}</div>
+                  <small class="text-info font-monospace">{{ em.user.digital_id if em.user else '' }}</small>
+                </td>
+                <td>
+                  <span class="badge bg-{{ 'danger' if em.type in ['Medical Emergency', 'Accident', 'Security Threat'] else 'warning text-dark' }}">
+                    {{ em.type }}
+                  </span>
+                </td>
+                <td class="small font-monospace text-secondary">
+                  {{ em.latitude|round(4) }}, {{ em.longitude|round(4) }}
+                </td>
+                <td class="small">
+                  {% if em.user and em.user.emergency_contact_phone %}
+                    <a href="tel:{{ em.user.emergency_contact_phone }}" class="text-warning text-decoration-none">
+                      📞 {{ em.user.emergency_contact_name }} ({{ em.user.emergency_contact_phone }})
+                    </a>
+                  {% else %}
+                    <span class="text-muted">N/A</span>
+                  {% endif %}
+                </td>
+                <td class="small" style="max-width: 250px;">
+                  <div>{{ em.description }}</div>
+                  {% if em.admin_notes %}
+                    <div class="text-info mt-1"><i class="bi bi-journal-text me-1"></i>{{ em.admin_notes }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if em.status == 'NEW' %}
+                    <span class="badge badge-status-new">NEW</span>
+                  {% elif em.status == 'ACKNOWLEDGED' %}
+                    <span class="badge badge-status-ack">ACKNOWLEDGED</span>
+                  {% elif em.status == 'IN PROGRESS' %}
+                    <span class="badge badge-status-prog">IN PROGRESS</span>
+                  {% else %}
+                    <span class="badge badge-status-res">RESOLVED</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    {% if em.status != 'ACKNOWLEDGED' and em.status != 'RESOLVED' and em.status != 'IN PROGRESS' %}
+                      <button class="btn btn-outline-warning" onclick="updateSosStatus({{ em.id }}, 'ACKNOWLEDGED')">
+                        Acknowledge
+                      </button>
+                    {% endif %}
+                    {% if em.status != 'IN PROGRESS' and em.status != 'RESOLVED' %}
+                      <button class="btn btn-outline-primary" onclick="updateSosStatus({{ em.id }}, 'IN PROGRESS')">
+                        In Progress
+                      </button>
+                    {% endif %}
+                    {% if em.status != 'RESOLVED' %}
+                      <button class="btn btn-outline-success" onclick="updateSosStatus({{ em.id }}, 'RESOLVED')">
+                        Resolve
+                      </button>
+                    {% else %}
+                      <span class="text-success small fw-semibold">Closed</span>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Geofence & Safety Alert Management -->
+<div class="row g-3 mb-4">
+  <!-- Geofence Manager -->
+  <div class="col-lg-7">
+    <div class="card cstan-card p-3 h-100">
+      <div class="cstan-card-header p-0 pb-2 mb-3">
+        <h5 class="fw-bold mb-0 text-light"><i class="bi bi-bounding-box-circles me-2 text-warning"></i>Geofence Boundary Management</h5>
+        <button class="btn btn-sm btn-outline-warning" data-bs-toggle="collapse" data-bs-target="#newGeofenceForm">
+          <i class="bi bi-plus-circle me-1"></i> Define Geofence
+        </button>
+      </div>
+
+      <!-- Add Geofence Collapsible Form -->
+      <div class="collapse mb-3" id="newGeofenceForm">
+        <form method="POST" action="{{ url_for('admin_geofence_create') }}" class="p-3 bg-dark rounded border border-secondary">
+          <h6 class="fw-bold text-warning mb-2">Create New Virtual Perimeter</h6>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <input type="text" class="form-control form-control-sm bg-black text-light border-secondary" name="name" required placeholder="Zone Name (e.g. Chemical Basin)">
+            </div>
+            <div class="col-md-3">
+              <select class="form-select form-select-sm bg-black text-light border-secondary" name="risk_level">
+                <option value="restricted">Restricted (Red)</option>
+                <option value="caution">Caution (Amber)</option>
+                <option value="safe">Safe Haven (Green)</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <input type="number" class="form-control form-control-sm bg-black text-light border-secondary" name="radius" required placeholder="Radius (meters)" value="400">
+            </div>
+            <div class="col-md-6">
+              <input type="number" step="0.0001" class="form-control form-control-sm bg-black text-light border-secondary" name="latitude" required placeholder="Latitude (e.g. 13.0827)">
+            </div>
+            <div class="col-md-6">
+              <input type="number" step="0.0001" class="form-control form-control-sm bg-black text-light border-secondary" name="longitude" required placeholder="Longitude (e.g. 80.2707)">
+            </div>
+            <div class="col-12">
+              <input type="text" class="form-control form-control-sm bg-black text-light border-secondary" name="description" placeholder="Short description of the area">
+            </div>
+            <div class="col-12">
+              <input type="text" class="form-control form-control-sm bg-black text-light border-secondary" name="advisory" placeholder="Safety advisory broadcast message for visitors">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-sm btn-warning mt-2 w-100 fw-semibold">Save & Activate Geofence</button>
+        </form>
+      </div>
+
+      <!-- Geofence List -->
+      <div class="table-responsive">
+        <table class="table table-dark table-sm align-middle mb-0">
+          <thead>
+            <tr class="text-muted small">
+              <th>Name</th>
+              <th>Risk Level</th>
+              <th>Radius</th>
+              <th>Active</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for gf in geofences %}
+              <tr>
+                <td class="fw-semibold text-light">{{ gf.name }}</td>
+                <td>
+                  <span class="badge bg-{{ 'danger' if gf.risk_level=='restricted' else ('warning text-dark' if gf.risk_level=='caution' else 'success') }}">
+                    {{ gf.risk_level }}
+                  </span>
+                </td>
+                <td class="small">{{ gf.radius }}m</td>
+                <td>
+                  <span class="badge bg-{{ 'success' if gf.active else 'secondary' }}">
+                    {{ 'Active' if gf.active else 'Disabled' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline-secondary" onclick="toggleGeofence({{ gf.id }})">
+                    {{ 'Disable' if gf.active else 'Enable' }}
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Safety Alert Broadcast -->
+  <div class="col-lg-5">
+    <div class="card cstan-card p-3 h-100">
+      <div class="cstan-card-header p-0 pb-2 mb-3">
+        <h5 class="fw-bold mb-0 text-light"><i class="bi bi-megaphone me-2 text-primary"></i>Broadcast Safety Advisory</h5>
+      </div>
+
+      <form method="POST" action="{{ url_for('admin_alert_create') }}">
+        <div class="mb-2">
+          <label class="form-label text-muted small mb-1">Advisory Title</label>
+          <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary" name="title" required placeholder="e.g. Flash Flood Advisory">
+        </div>
+        <div class="mb-2">
+          <label class="form-label text-muted small mb-1">Risk Severity</label>
+          <select class="form-select form-select-sm bg-dark text-light border-secondary" name="risk_level">
+            <option value="low">Low (Notice)</option>
+            <option value="medium" selected>Medium (Caution)</option>
+            <option value="high">High (Immediate Action)</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label text-muted small mb-1">Coordinates (Optional - to link map alert)</label>
+          <div class="row g-2">
+            <div class="col-6">
+              <input type="number" step="0.0001" class="form-control form-control-sm bg-dark text-light border-secondary" name="latitude" placeholder="Latitude">
+            </div>
+            <div class="col-6">
+              <input type="number" step="0.0001" class="form-control form-control-sm bg-dark text-light border-secondary" name="longitude" placeholder="Longitude">
+            </div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted small mb-1">Full Advisory Notice</label>
+          <textarea class="form-control form-control-sm bg-dark text-light border-secondary" name="description" rows="3" required placeholder="Instruction for travelers and citizens..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary w-100 fw-semibold">
+          <i class="bi bi-broadcast me-1"></i> Transmit City-Wide Alert
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Registered Citizens Directory -->
+<div class="row g-3">
+  <div class="col-12">
+    <div class="card cstan-card p-3">
+      <div class="cstan-card-header p-0 pb-2 mb-3">
+        <h5 class="fw-bold mb-0 text-light"><i class="bi bi-people me-2 text-info"></i>Monitored Citizen & Tourist Directory</h5>
+        <span class="badge bg-secondary">{{ active_users|length }} Users</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-dark table-sm align-middle mb-0">
+          <thead>
+            <tr class="text-muted small">
+              <th>Digital ID</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Emergency Contact</th>
+              <th>Blood Group</th>
+              <th>Last Known Position</th>
+              <th>Last Active</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in active_users %}
+              <tr>
+                <td class="font-monospace text-info fw-bold">{{ u.digital_id }}</td>
+                <td class="text-light fw-semibold">{{ u.username }}</td>
+                <td class="small text-muted">{{ u.email }}</td>
+                <td class="small">{{ u.phone }}</td>
+                <td class="small text-warning">{{ u.emergency_contact_name }} ({{ u.emergency_contact_phone }})</td>
+                <td><span class="badge bg-secondary">{{ u.blood_group }}</span></td>
+                <td class="small font-monospace">
+                  {% if u.last_latitude and u.last_longitude %}
+                    {{ u.last_latitude|round(3) }}, {{ u.last_longitude|round(3) }}
+                  {% else %}
+                    Offline
+                  {% endif %}
+                </td>
+                <td class="small text-muted">{{ u.last_active.strftime('%H:%M:%S') if u.last_active else 'N/A' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/admin_map.js') }}"></script>
+{% endblock %}

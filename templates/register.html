@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Register – Digital Tourist Safety ID{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+  <div class="col-md-8 col-lg-6">
+    <div class="card cstan-card p-4">
+      <div class="text-center mb-4">
+        <div class="d-inline-flex p-3 rounded-circle bg-info-subtle text-info mb-2">
+          <i class="bi bi-person-vcard fs-1"></i>
+        </div>
+        <h3 class="fw-bold text-light">Register Digital Safety Identity</h3>
+        <p class="text-muted small">Receive an encrypted Digital Tourist/Citizen Pass and instant SOS dispatch access</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('register') }}">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label text-light small fw-semibold">Username / Full Name *</label>
+            <input type="text" class="form-control bg-dark text-light border-secondary" name="username" required placeholder="e.g. Vikramaditya">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-light small fw-semibold">Email Address *</label>
+            <input type="email" class="form-control bg-dark text-light border-secondary" name="email" required placeholder="vikram@example.com">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label text-light small fw-semibold">Password *</label>
+            <input type="password" class="form-control bg-dark text-light border-secondary" name="password" required placeholder="At least 6 characters">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-light small fw-semibold">Mobile Phone *</label>
+            <input type="tel" class="form-control bg-dark text-light border-secondary" name="phone" required placeholder="+91 98765 00000">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label text-light small fw-semibold">Preferred Interface Language</label>
+            <select class="form-select bg-dark text-light border-secondary" name="language">
+              <option value="en" selected>English</option>
+              <option value="ta">Tamil (தமிழ்)</option>
+              <option value="hi">Hindi (हिन्दी)</option>
+              <option value="te">Telugu (తెలుగు)</option>
+              <option value="ml">Malayalam (മലയാളം)</option>
+              <option value="kn">Kannada (ಕನ್ನಡ)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-light small fw-semibold">Blood Group</label>
+            <select class="form-select bg-dark text-light border-secondary" name="blood_group">
+              <option value="Unknown">Select Blood Group</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <div class="p-3 rounded bg-dark border border-secondary">
+              <h6 class="text-warning fw-semibold mb-2"><i class="bi bi-telephone-plus me-1"></i> Emergency Contact (Auto-notified on SOS)</h6>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <input type="text" class="form-control bg-dark text-light border-secondary form-control-sm" name="emergency_contact_name" required placeholder="Contact Name (e.g. Ramesh - Father)">
+                </div>
+                <div class="col-md-6">
+                  <input type="tel" class="form-control bg-dark text-light border-secondary form-control-sm" name="emergency_contact_phone" required placeholder="Contact Phone (+91 90000 00000)">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label text-light small fw-semibold">Initial Travel Destination</label>
+            <input type="text" class="form-control bg-dark text-light border-secondary" name="destination" placeholder="e.g. Chennai Marina & Heritage Route">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-light small fw-semibold">Medical Allergies / Notes</label>
+            <input type="text" class="form-control bg-dark text-light border-secondary" name="medical_notes" placeholder="e.g. Penicillin allergy, Inhaler user">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mt-4">
+          <i class="bi bi-shield-plus me-1"></i> Register & Generate Digital Safety Pass
+        </button>
+
+        <div class="text-center mt-3">
+          <span class="text-muted small">Already have a safety identity?</span>
+          <a href="{{ url_for('login') }}" class="small text-info ms-1">Sign In</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
