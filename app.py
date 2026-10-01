@@ -24,6 +24,15 @@ def create_app():
 
     db.init_app(app)
 
+    with app.app_context():
+        db.create_all()
+        try:
+            if not db.session.execute(db.select(User)).first():
+                from seed_data import populate_data
+                populate_data()
+        except Exception:
+            pass
+
     login_manager = LoginManager()
     login_manager.login_view = 'login'
     login_manager.login_message = 'Please log in to access this page.'
